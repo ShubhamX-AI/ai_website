@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>INT. Global AI</title>
+    <style>
+        :root {
+            --primary-blue: #0056b3;
+            --primary-hover: #004494;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-main: #212529;
+            --text-muted: #6c757d;
+            --border-color: #e9ecef;
+            --shadow-sm: 0 4px 6px rgba(0,0,0,0.04);
+            --shadow-md: 0 10px 20px rgba(0,0,0,0.08);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; }
+
+        /* HEADER */
+        nav {
+            background-color: var(--card-bg); padding: 20px 40px; position: sticky; top: 0; z-index: 100;
+            box-shadow: var(--shadow-sm); display: flex; flex-direction: column; align-items: center; gap: 20px;
+        }
+        .brand { font-size: 1.5rem; font-weight: 800; color: var(--primary-blue); text-decoration: none; align-self: flex-start; }
+        
+        /* SEARCH */
+        .search-container { width: 100%; max-width: 800px; }
+        .search-bar-wrapper {
+            display: flex; align-items: center; background: var(--bg-color); border: 1px solid #ddd;
+            border-radius: 50px; padding: 10px 10px 10px 24px; transition: all 0.3s ease;
+        }
+        .search-bar-wrapper:focus-within { border-color: var(--primary-blue); background: white; box-shadow: 0 4px 12px rgba(0, 86, 179, 0.1); }
+        input[type="text"] { flex: 1; border: none; background: transparent; font-size: 1.1rem; outline: none; color: var(--text-main); }
+        .search-btn {
+            background-color: var(--primary-blue); color: white; border: none; border-radius: 50%; width: 44px; height: 44px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s;
+        }
+        .search-btn:hover { background-color: var(--primary-hover); }
+        .search-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+        /* CONTENT */
+        main { flex: 1; max-width: 1000px; width: 100%; margin: 0 auto; padding: 40px 20px; display: flex; flex-direction: column; gap: 40px; }
+        
+        .empty-state { text-align: center; margin-top: 100px; color: var(--text-muted); }
+        .empty-state h2 { font-size: 2rem; margin-bottom: 15px; color: var(--primary-blue); }
+
+        /* AI ANSWER TEXT */
+        .ai-answer-section { animation: fadeIn 0.5s ease; }
+        .ai-heading { font-size: 1.2rem; font-weight: 600; margin-bottom: 15px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+        
+        .ai-text {
+            font-size: 1.2rem; line-height: 1.7; color: #333; white-space: pre-wrap;
+            font-weight: 400;
+        }
+
+        /* CURSOR BLINK */
+        .cursor-blink {
+            display: inline-block; width: 8px; height: 20px; background-color: var(--primary-blue);
+            animation: blink 1s step-end infinite; vertical-align: sub; margin-left: 2px;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        /* CARDS GRID */
+        .results-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;
+            width: 100%; margin-top: 20px; animation: slideUp 0.6s ease;
+        }
+
+        .info-card {
+            background: var(--card-bg); border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color);
+            transition: transform 0.2s ease, box-shadow 0.2s ease; display: flex; flex-direction: column; height: 100%;
+        }
+        .info-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); border-color: var(--primary-blue); }
+
+        .card-image-container { height: 160px; width: 100%; background-color: #f1f1f1; }
+        .card-image { width: 100%; height: 100%; object-fit: cover; }
+        
+        .card-content { padding: 20px; display: flex; flex-direction: column; flex-grow: 1; }
+        .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 10px; color: var(--primary-blue); }
+        .card-snippet { font-size: 0.9rem; color: #555; line-height: 1.5; margin-bottom: 15px; flex-grow: 1; }
+        
+        .card-footer { margin-top: auto; border-top: 1px solid var(--border-color); padding-top: 12px; text-align: right; }
+        .deep-link-btn { color: var(--primary-blue); font-weight: 600; font-size: 0.85rem; text-decoration: none; }
+        .deep-link-btn:hover { text-decoration: underline; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* LOADER */
+        .loader-container { display: none; justify-content: center; margin-top: 50px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-blue); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div style="width: 100%; max-width: 1000px; display:flex; flex-direction: column; gap: 15px;">
+            <a href="/" class="brand">INT. <span style="font-weight:400; color:#666;">Intelligence</span></a>
+            <form class="search-container" id="search-form">
+                <div class="search-bar-wrapper">
+                    <input type="text" id="query-input" placeholder="Ask anything..." autocomplete="off">
+                    <button type="submit" class="search-btn" id="search-btn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state">
+            <h2>How can I help you today?</h2>
+            <p>Ask about employees, case studies, or company insights.</p>
+        </div>
+
+        <!-- Loader -->
+        <div id="loader" class="loader-container">
+            <div class="spinner"></div>
+        </div>
+
+        <!-- Results -->
+        <div id="results-area" style="display: none;">
+            
+            <div class="ai-answer-section">
+                <div class="ai-heading">INT. AI Answer</div>
+                <!-- TEXT STREAM TARGET -->
+                <p id="streaming-text" class="ai-text"></p>
+            </div>
+
+            <!-- CARDS CONTAINER -->
+            <div id="cards-grid" class="results-grid"></div>
+        </div>
+    </main>
+
+    <script>
+        const searchForm = document.getElementById('search-form');
+        const queryInput = document.getElementById('query-input');
+        const emptyState = document.getElementById('empty-state');
+        const loader = document.getElementById('loader');
+        const resultsArea = document.getElementById('results-area');
+        const streamingTextEl = document.getElementById('streaming-text');
+        const cardsGrid = document.getElementById('cards-grid');
+        const searchBtn = document.getElementById('search-btn');
+
+        searchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = queryInput.value.trim();
+            if (!query) return;
+
+            // Reset UI
+            emptyState.style.display = 'none';
+            resultsArea.style.display = 'none';
+            loader.style.display = 'flex';
+            cardsGrid.innerHTML = ''; 
+            streamingTextEl.innerHTML = ''; 
+            
+            // Add Cursor
+            const cursor = document.createElement('span');
+            cursor.className = 'cursor-blink';
+            streamingTextEl.appendChild(cursor);
+
+            queryInput.blur();
+            searchBtn.disabled = true;
+
+            try {
+                // Ensure this URL matches your backend
+                const response = await fetch(`http://127.0.0.1:8000/query/stream?user_input=${encodeURIComponent(query)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+
+                loader.style.display = 'none';
+                resultsArea.style.display = 'block';
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+                let buffer = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+                    let lines = buffer.split("\n");
+                    buffer = lines.pop(); // Keep incomplete line
+
+                    for (const line of lines) {
+                        if (!line.trim()) continue;
+                        try {
+                            const msg = JSON.parse(line);
+                            handleStreamEvent(msg);
+                        } catch (err) { console.error("Parse error", err); }
+                    }
+                }
+
+            } catch (error) {
+                console.error(error);
+                streamingTextEl.textContent = "Error connecting to server.";
+            } finally {
+                searchBtn.disabled = false;
+                const finalCursor = document.querySelector('.cursor-blink');
+                if (finalCursor) finalCursor.remove();
+            }
+        });
+
+        function handleStreamEvent(msg) {
+            const cursor = document.querySelector('.cursor-blink');
+
+            // 1. TEXT DELTA: Only append text here
+            if (msg.type === 'delta') {
+                const textNode = document.createTextNode(msg.content);
+                if (cursor) {
+                    streamingTextEl.insertBefore(textNode, cursor);
+                } else {
+                    streamingTextEl.appendChild(textNode);
+                }
+            } 
+            // 2. RESULT JSON: Don't print it! Send to card renderer
+            else if (msg.type === 'result') {
+                // The 'content' is the full JSON object (cards + answer)
+                renderCards(msg.content); 
+            }
+            // 3. ERROR
+            else if (msg.type === 'error') {
+                streamingTextEl.innerHTML += `<br><span style="color:red">Error: ${msg.content}</span>`;
+            }
+        }
+
+        function renderCards(data) {
+            if (data.cards && data.cards.length > 0) {
+                data.cards.forEach(card => {
+                    const article = document.createElement('article');
+                    article.className = 'info-card';
+                    
+                    const img = card.image || 'https://via.placeholder.com/400x200?text=INT.+Global';
+                    
+                    article.innerHTML = `
+                        <div class="card-image-container">
+                            <img src="${img}" class="card-image" onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">
+                        </div>
+                        <div class="card-content">
+                            <h3 class="card-title">${card.title}</h3>
+                            <p class="card-snippet">${card.snippet}</p>
+                            <div class="card-footer">
+                                <a href="${card.deep_link || '#'}" target="_blank" class="deep-link-btn">Read Source →</a>
+                            </div>
+                        </div>
+                    `;
+                    cardsGrid.appendChild(article);
+                });
+            }
+        }
+    </script>
+</body>
+</html>

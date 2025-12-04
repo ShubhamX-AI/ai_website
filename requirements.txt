@@ -1,0 +1,5 @@
+chromadb
+beautifulsoup4
+aiohttp
+openai
+fastapi[standard]
